@@ -1,0 +1,89 @@
+{
+    "package": "com.devislee.H5",
+    "name": "H5游戏开服表",
+    "versionName": "1.0.0",
+    "versionCode": "1",
+    "minPlatformVersion": "101",
+    "icon": "/Common/icon.png",
+    "features": [
+        { "name": "system.webview" },
+        { "name": "system.prompt" },
+        { "name": "system.device" },
+        { "name": "system.fetch" },
+        { "name": "system.file" },
+        { "name": "system.geolocation" },
+        { "name": "system.media" },
+        { "name": "system.notification" },
+        { "name": "system.barcode" },
+        { "name": "system.sensor" },
+        { "name": "system.share" },
+        { "name": "system.shortcut" },
+        { "name": "system.storage" },
+        { "name": "system.network" },
+        { "name": "system.request" }
+    ],
+    "permissions": [
+        { "origin": "*" }
+    ],
+    "config": {
+        "logLevel": "debug"
+    },
+    "router": {
+        "entry": "Home",
+        "pages": {
+            "Home": {
+                "component": "index"
+            },
+            "About": {
+                "component": "index"
+            },
+            "Web": {
+                "component": "index"
+            },
+            "Center": {
+                "component": "index"
+            },
+            "Login": {
+                "component": "index"
+            },
+            "Register": {
+                "component": "index"
+            },
+            "Cardid": {
+                "component": "index"
+            }
+        }
+    },
+    "display": {
+        "titleBarBackgroundColor": "#FF8364",
+        "titleBarTextColor": "#FFE8D5",
+        "backgroundColor": "#efefef",
+        "menu": true,
+        "pages": {
+            "Home": {
+                "titleBarText": "H5游戏开服表",
+                "menu": true
+            },
+            "About": {
+                "titleBarText": "关于",
+                "menu": false
+            },
+            "Login": {
+                "titleBarText": "登录",
+                "menu": false
+            },
+            "Center": {
+                "titleBarText": "个人中心",
+                "menu": false
+            },
+            "Register": {
+                "titleBarText": "注册",
+                "menu": false
+            },
+            "Cardid": {
+                "titleBarText": "完善防沉迷信息",
+                "menu": false
+            }
+        }
+    }
+}

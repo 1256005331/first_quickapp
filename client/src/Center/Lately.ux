@@ -1,0 +1,142 @@
+<template>
+    <div>
+        <div class="lately" if="{{isshow}}">
+            <div class="lately_title">
+                <text>最近登录</text>
+            </div>
+            <div class="content_box">
+            <div class="lately_content">
+                <div show="{{latelytext}}">
+                    <text>您还没有最近登录过的游戏</text>
+                </div>
+                <div show="{{latelytype}}" @click="goToWeb('http://member.8090.com/game/game_h5.php?game='+latelyData.gnamejc+'&username=')">
+                    <image class="content_image" src="http://h.8090.com{{latelyData.gico}}"></image>
+                </div>
+            </div>
+
+            </div>
+        </div>
+        <div class="lately" else>
+        
+        </div>
+    </div>
+</template>
+
+<script>
+import prompt from '@system.prompt'
+import router from '@system.router'
+import storage from '@system.storage'
+import fetch from '@system.fetch'
+import webview from '@system.webview'
+export default {
+    data() {
+        return {
+            username:'',
+            latelyData:[],
+            isshow:true,
+            latelytype:false,
+            latelytext:false
+        }
+    },
+    onInit() {
+        this.userinfo()
+    },
+    userinfo(){
+    let that = this
+    storage.get({
+        key:'username',
+        success: function (data) {
+            if(data == ''){
+                that.isshow = false
+            }else{
+            that.username = data
+            //获取最近登录数据
+            fetch && fetch.fetch({
+                url: "http://data.8090.com/api/get_h5_info.php?username="+data,
+                success: function(data) {
+                        var temlatelyData = []
+                        try {
+                            temlatelyData = JSON.parse(data.data)
+                        } catch (error) {
+                            console.log("JSON.parse(data.data).results catch error")
+                        }
+                        that.latelyData = temlatelyData;
+                        if(temlatelyData.gname == ''){
+                            that.latelytype = false
+                            that.latelytext = true
+                        }else if(temlatelyData.gname){
+                            that.latelytype = true
+                            that.latelytext = false
+                        }
+                },
+                fail: function(data, code) {
+                    console.log("fetch fail, code=" + code);
+                }
+            })
+            return false
+            }
+        },
+        fail: function (data, code) {
+                router.push({
+                    uri: '/Login'
+                })
+            }
+        })
+    },
+    goToWeb(urlString) {
+        let time = Date.parse(new Date());
+        storage.get({
+            key: 'time',
+            success: function (data) {
+                if(data < time || data == ''){
+                    router.push({
+                        uri: '/Login',
+                        params: {
+                            goback: urlString,
+                            page_type:1
+                        }
+                    })
+                }
+            },
+            fail: function (data, code) {
+                router.push({
+                    uri: '/Login'
+                })
+            }
+        })
+        storage.get({
+            key: 'username',
+            success: function (data) {
+                if(data == ''){
+                    router.push({
+                        uri: '/Login',
+                        params: {
+                            goback: urlString,
+                            page_type:1
+                        }
+                    })
+                }else{
+                    webview.loadUrl({
+                        url: urlString + data
+                    })
+                }
+            },
+            fail: function (data, code) {
+                router.push({
+                    uri: '/Login'
+                })
+            }
+        })
+    }
+}
+</script>
+
+<style>
+.lately,.hot    {justify-content: center;flex-direction: column;width:750px;}
+.lately_title,.hot_title {width:100%;padding-left:20px;background-color:#FF8364;color:#FFE8D5;padding-top:10px;padding-bottom:10px;}
+.lately_title text,.hot_title text{color:#FFE8D5;}
+.lately_content {flex-direction: column;padding:10px;}
+.content_image  {width:90px;height:90px;padding:10px;}
+.content_text  {font-size:20px;color:#ff1234;}
+.content_box {flex-direction:row;}
+</style>

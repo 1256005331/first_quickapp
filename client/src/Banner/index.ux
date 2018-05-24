@@ -1,0 +1,98 @@
+<template>
+    <list class="home-page" onscrollbottom="loadMoreData">
+        <list-item type="banner">
+            <swiper class="banner" autoplay="true" interval="4000">
+              <stack class="banner" for="{{bannerlist}}">
+                <image class="banner-image" src="{{$item.imagePath}}" onclick="openArticle($item.url)"></image>
+              </stack>
+            </swiper>
+        </list-item>
+    </list>
+</template>
+
+<style>
+swiper                  {indicator-color:#FFE8D5;indicator-selected-color:#FF8364;}
+.home-page              {height: 250px;}
+.banner, .banner-image  {width: 100%;height: 250px;}
+.banner-title           {text-overflow: ellipsis;lines: 1;text-align: center;height: 90px;width: 100%;color: #ffffff;background-color: #000000;opacity: 0.5;}
+</style>
+
+<script>
+import fetch from '@system.fetch'
+import webview from '@system.webview'
+import router from '@system.router'
+import storage from '@system.storage'
+export default {
+    data() {
+        return {
+            bannerlist:[]
+        }
+    },
+    onInit() {
+        this.gobannerlist()
+    },
+    openArticle(urlstring){
+        let time = Date.parse(new Date());
+        storage.get({
+            key: 'time',
+            success: function (data) {
+                if(data < time || data == ''){
+                    router.push({
+                        uri: '/Login',
+                        params: {
+                            goback: urlstring,
+                            page_type:1
+                        }
+                    })
+                }
+            },
+            fail: function (data, code) {
+                router.push({
+                    uri: '/Login'
+                })
+            }
+        })
+        storage.get({
+            key: 'username',
+            success: function (data) {
+                if(data == ''){
+                    router.push({
+                        uri: '/Login',
+                        params: {
+                            goback: urlstring,
+                            page_type:1
+                        }
+                    })
+                }else{
+                    webview.loadUrl({
+                        url: urlstring + data
+                    })
+                }
+            },
+            fail: function (data, code) {
+                router.push({
+                    uri: '/Login'
+                })
+            }
+        })
+    },
+    gobannerlist(){
+        let that = this
+        fetch && fetch.fetch({
+            url: "http://h.8090.com/kyy_kfb/admin/index.php/Kyy/bannerlist",
+            success: function(data) {
+                    var tembannerData = []
+                    try {
+                        tembannerData = JSON.parse(data.data)
+                    } catch (error) {
+                        console.log("JSON.parse(data.data).results catch error")
+                    }
+                    that.bannerlist = tembannerData;
+            },
+            fail: function(data, code) {
+                console.log("fetch fail, code=" + code);
+            }
+        })
+    }
+}
+</script>

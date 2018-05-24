@@ -1,0 +1,227 @@
+<template>
+	<stack class="content">
+    <refresh class="refresh-div" onrefresh="refresh" refreshing="{{isRefreshing}}" offset="200px">
+    <list class="page-list" id="list_data" onscrolltop="scrolltop" onscrollbottom="scrollbottom">
+        <!--今日开服数据（数据 listData）-->
+        <list-item type="bottom-item">
+            <text class="gname">今日开服</text>
+        </list-item>
+        <list-item type="list-item" for="value in listData">
+            <div class="item-content-div" >
+                <div class="image">
+                    <image class="item-image" src="{{value.ico}}" ></image>
+                </div>
+                <div class="text-list">
+                    <text class="gname">{{value.gamename}}</text>
+                    <text class="text-list">开服时间：{{value.open_time}}</text>
+                    <text class="text-list">服务器名：{{value.gserver}}</text>
+                </div>
+                <div>
+                    <a class="button" @click="goToWeb(value.enter)">开始</a>
+                </div>
+            </div>
+        </list-item>
+        <!--即将开服数据（数据 listDataSoon）-->
+        <list-item type="bottom-item">
+            <text class="gname">即将开服</text>
+        </list-item>  
+			<list-item type="list-item" for="value_soon in listDataSoon">
+				<div class="item-content-div" >
+                    <div class="image">
+                        <image class="item-image" src="{{value_soon.ico}}" ></image>
+                    </div>
+                    <div class="text-list">
+                        <text class="gname">{{value_soon.gamename}}</text>
+                        <text class="text-list">开服时间：{{value_soon.open_time}}</text>
+                        <text class="text-list">服务器名：{{value_soon.gserver}}</text>
+                    </div>
+                    <a class="button" @click="goToWeb(value_soon.enter)">开始</a>
+                </div>
+			</list-item>
+		</list>
+        
+		<!-- 回顶按钮 -->
+		<image 
+		if="showGoToTop"
+		class="showgototop" 
+		onclick="gototop()" 
+		src="https://gw.alicdn.com/tps/TB1Wyj2KFXXXXXOXXXXXXXXXXXX-135-135.png"></image>
+    </refresh>
+  	</stack>
+</template>
+
+<script>
+    import fetch from '@system.fetch'
+    import router from '@system.router'
+    import webview from '@system.webview'
+    import storage from '@system.storage'
+    export default {
+        props: ['mydata'],
+        data: {
+            listData: [],
+            listDataSoon:[],
+            showGoToTop: false,
+            isRefreshing: false,
+            loadingText: "没有更多内容了 ~"
+        },
+        onInit() {
+            this.getDataList(false)
+            this.getDataListSoon(false)
+        },
+        getDataList: function() {
+            var self = this
+            
+            fetch && fetch.fetch({
+                url: "http://h.8090.com/kyy_kfb/admin/index.php/Kyy/datalist?type=day&category="+self.mydata.tag,
+                success: function(data) {
+                    if(data.data != null){
+                        var tempData = []
+                        try {
+                            tempData = JSON.parse(data.data)
+                        } catch (error) {
+                            console.log("JSON.parse(data.data).results catch error")
+                        }
+                            self.listData = tempData;
+                            self.isRefreshing = false
+                    }else{
+                        self.isRefreshing = false
+                    }
+                },
+                fail: function(data, code) {
+                    console.log("fetch fail, code=" + code);
+                    self.loadingText = "很抱歉，加载失败"
+                    self.isRefreshing = false
+                }
+            })
+        },
+        getDataListSoon: function() {
+            var self = this
+            fetch && fetch.fetch({
+                url: "http://h.8090.com/kyy_kfb/admin/index.php/Kyy/datalist?type=soon&category="+self.mydata.tag,
+                success: function(data) {
+                    if(data.data != null){
+                        var tempDataSoon = []
+                        try {
+                            tempDataSoon = JSON.parse(data.data)
+                        } catch (error) {
+                            console.log("JSON.parse(data.data).results catch error")
+                        }
+                        self.listDataSoon = tempDataSoon;
+                        if(self.isRefreshing){
+                            self.isRefreshing = false
+                        }
+                    }else{
+                        if(self.isRefreshing){
+                            self.isRefreshing = false
+                        }
+                        self.loadingText = "没有更多内容了 ~"
+                    }
+                },
+                fail: function(data, code) {
+                    console.log("fetch fail, code=" + code);
+                    self.loadingText = "很抱歉，加载失败"
+                    if(self.isRefreshing){
+                        self.isRefreshing = false
+                    }
+                }
+            })
+        },
+        refresh: function(e) {
+            this.isRefreshing = e.refreshing;
+            this.showGoToTop = false
+            this.getDataList(false);
+            this.getDataListSoon(true)
+        },
+        scrolltop: function(e) {
+            this.showGoToTop = false
+        },
+        scrollbottom: function(e) {
+            if(!this.showGoToTop){
+                this.showGoToTop = true
+            }else{
+                this.showGoToTop = true
+            }
+        },
+        goToWeb(urlString) {
+            let time = Date.parse(new Date());
+            storage.get({
+                key: 'time',
+                success: function (data) {
+                    if(data < time){
+                        router.push({
+                            uri: '/Login',
+                            params: {
+                                goback: urlString + data,
+                                page_type:1
+                            }
+                        })
+                    }
+                },
+                fail: function (data, code) {
+                        router.push({
+                            uri: '/Login',
+                            params: {
+                                goback: urlString + data,
+                                page_type:1
+                            }
+                        })
+                }
+            })
+            storage.get({
+                key: 'username',
+                success: function (data) {
+                    if(data == ''){
+                        router.push({
+                            uri: '/Login',
+                            params: {
+                                goback: urlString + data,
+                                page_type:1
+                            }
+                        })
+                    }else{
+                        webview.loadUrl({
+                            url: urlString + data
+                        })
+                    }
+                },
+                fail: function (data, code) {
+                        router.push({
+                            uri: '/Login',
+                            params: {
+                                goback: urlString + data,
+                                page_type:1
+                            }
+                        })
+                }
+            })
+        },
+        gototop: function(e) {
+            this.showGoToTop = false
+            this.$element('list_data').scrollTo({
+                index: 0,
+                smooth: false
+            })
+        }
+    }
+</script>
+
+
+<style>
+.gname          {font-size:30px;color:#FF4D4D}
+.image          {flex-direction:column;width:120px;padding:10px;border-radius:10px}
+.text-list      {flex-direction:column;width:450px;margin-left:20px;color:#FF8364}
+.content        {width:750px;height:100%}
+.button         {height:60px;width:80px;margin-top:30px;font-size:30px;border-radius:20px;padding:10px;background-color:#FF8364;color:#FFE8D5}
+.refresh-div    {flex-direction:column;flex:1;width:750px;progress-color:#ff1234}
+.page-list      {width:750px;height:100%;flex-direction:column}
+.item-content-div{width:100%;margin-left:20px;margin-right:20px;margin-top:20px;background-color:#ffffff;border-radius:10px}
+.item-image     {width:100px;height:100px;background-color:rgba(0,0,0,.03);border-radius:10px}
+.item-image-small{width:680px;height:340px;resize-mode:contain;background-color:rgba(0,0,0,.03)}
+.item-title     {width:100%;font-size:30px;color:#666666;margin-bottom:15px}
+.item-date      {width:100%;height:30px;font-size:24px;color:#999999;margin-top:15px}
+.bottom-div     {width:750px;height:120px;justify-content:center;align-items:center}
+.bottom-progress{height:120px;stroke-width:32px;color:#ff1234}
+.bottom-text    {margin-left:10px;height:120px;text-align:center;font-size:30px}
+.showgototop    {position:fixed;width:80px;height:80px;right:30px;bottom:60px;animation-name:showgototop;animation-duration:.8s;animation-fill-mode:forwards;animation-timing-function:ease-in}
+.bottom_style   {width:100%;padding-top:30px;padding-bottom:30px;justify-content:center;align-items:center}
+</style>

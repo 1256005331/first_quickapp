@@ -1,0 +1,175 @@
+<template>
+    <stack class="content">
+        <refresh class="refresh-div" onrefresh="refresh" refreshing="{{isRefreshing}}" offset="200px">
+        <div class="form">
+            <text style="color:#ff1234">{{chk_text}}</text>
+            <input type="text" class="user" id="username" placeholder="请输入用户名" value="" onchange="onInputUsername"/>
+            <input type="password" class="pwd" id="password1" placeholder="请输入密码" value="" onchange="onInputPassword1"/>
+            <input type="password" class="pwd" id="password2" placeholder="请重复密码" value="" onchange="onInputPassword2"/>
+            <input type="button" class="btn" id="button" value="注册" @click="goreg"/>
+            <div style="margin-left:200px;margin-top:30px;">
+               <text class="reg">您已有账号?</text><text style="margin-left:30px;color:#FF8364" @click="gologin">立即登录</text>
+            </div>
+        </div>
+   </stack>
+</template>
+
+<style>
+    .refresh-div{flex-direction:column;flex:1;width:750px;progress-color:#ff1234}
+    .form{width:750px;flex-direction:column;align-items:center;margin-top:250px}
+    .btn,.pwd,.user{width:80%;height:100px;margin-top:30px;border-radius:10px;padding:10px}
+    .pwd,.user{border:1px solid #aaaaaa}
+    .btn{background-color:#FF8364;color:#FFE8D5}
+</style>
+
+<script>
+import prompt from '@system.prompt'
+import storage from '@system.storage'
+import fetch from '@system.fetch'
+import router from '@system.router'
+import webview from '@system.webview'
+export default {
+    data(){
+        return{
+            username:'',
+            password1:'',
+            password2:'',
+            isRefreshing:false,
+            chk_text:''
+        }
+    },
+    onInit() {
+        
+    },
+    gologin(){
+        router.push({
+            uri: '/Login'
+        })
+    },
+    onInputUsername(input) {
+        this.username = input.value
+    },
+    onInputPassword1(input) {
+        this.password1 = input.value
+    },
+    onInputPassword2(input) {
+        this.password2 = input.value
+    },
+    //注册
+    goreg(){
+        //参数校验
+        let userzz = /^[a-z]{1}\w+$/;
+        if(!userzz.test(this.username)){
+            this.chk_text = '用户名：小写字母，可以使用数字及下划线。'
+            return false
+        }
+        let pwdzz = /\w{6,20}$/;
+        if(!pwdzz.test(this.password1) && !pwdzz.test(this.password2)){
+            this.chk_text = '密码：小写字母，可以使用数字及下划线。'
+            return false
+        }
+        if(this.password1 !== this.password2){
+            this.chk_text = '密码：密码不一致。' 
+            return false
+        }
+        this.chk_text = ' '
+        this.isRefreshing = true
+        let that = this
+        //用户名校验
+
+        fetch && fetch.fetch({
+            url: "http://member.8090.com/api/user/checkuser.php?action=checkuser&format=json&username="+that.username,
+            success:function(data) {
+                let msg = data.data
+                if(msg != '({"msg":0})'){
+                    that.chk_text = '用户名：该用户名已被注册,请重新输入用户名';
+                    that.isRefreshing = false
+                    return false
+                }else{
+                    fetch && fetch.fetch({
+                        url: "http://member.8090.com/reg_new.php?flash=nogo",
+                        method:'POST',
+                        data:{email:'p@8090.com',userid:that.username,userpwd:that.password1,userpwdok:that.password2,pyx_url:'kuaiyingyong'},
+                        success:function(data) {
+                            let msg = data.data
+                            if(msg == '({"msg":1})'){
+                                let time_stamp = Date.parse(new Date());
+                                time_stamp = time_stamp + (60*60*24*30*1000);
+                                //设置登录时间
+                                storage.set({
+                                    key:'time',
+                                    value:time_stamp,
+                                    success: function (data) {
+                                    },
+                                    fail: function (data, code) {
+                                        that.isRefreshing = false
+                                        prompt.showToast({message: '登录失败2'})
+                                        return false
+                                    }
+                                })
+                                //设置用户名
+                                storage.set({
+                                    key:'username',
+                                    value:that.username,
+                                    success: function (data) {
+                                    },
+                                    fail: function (data, code) {
+                                        that.isRefreshing = false
+                                        prompt.showToast({message: '登录失败3'})
+                                        return false
+                                    }
+                                })
+                                storage.get({
+                                    key:'username',
+                                    success: function (data) {
+                                        if(data == that.username){
+                                            router.clear()
+                                            if(that.page_type == 1){
+                                                webview.loadUrl({
+                                                    url: that.goback + data
+                                                })
+                                                return false
+                                            }
+                                            router.push({
+                                                uri: '/Center'
+                                            })
+                                            return false
+                                        }else{
+                                            prompt.showToast({message: '注册失败'})
+                                            that.isRefreshing = false
+                                            return false
+                                        }
+                                    },
+                                    fail: function (data,code) {
+                                        that.isRefreshing = false
+                                        return false
+                                    }
+                                })
+                            }else{
+                                prompt.showToast({message: '注册失败'})
+                                that.isRefreshing = false
+                                return false
+                            }
+                        },
+                        fail: function (data,code) {
+                            prompt.showToast({message: '注册失败'})
+                            that.isRefreshing = false
+                            return false
+                        }
+                    })
+                }
+            },
+            fail: function (data,code) {
+                prompt.showToast({message: '注册失败'})
+                that.isRefreshing = false
+                return false
+            }
+        })
+    },
+    refresh(){
+        this.isRefreshing = true
+        this.isRefreshing = false
+        this.$forceUpdate()
+    }
+}
+</script>

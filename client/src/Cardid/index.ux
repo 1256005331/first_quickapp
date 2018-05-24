@@ -1,0 +1,110 @@
+<template>
+    <stack class="content">
+        <refresh class="refresh-div" onrefresh="refresh" refreshing="{{isRefreshing}}" offset="200px">
+        <div class="form">
+            <input type="text" class="user" id="rname" placeholder="请输入真实姓名" value="" onchange="onInputRname"/>
+            <input type="text" class="pwd" id="cardid" placeholder="请输入身份证号" value="" onchange="onInputCardid"/>
+            <input type="button" class="btn" id="button" value="确定" @click="sub"/>
+        </div>
+    </stack>
+</template>
+
+<style>
+.refresh-div{flex-direction:column;flex:1;width:750px;progress-color:#ff1234}
+.form{width:750px;flex-direction:column;align-items:center;margin-top:250px}
+.btn,.pwd,.user{width:80%;height:100px;margin-top:30px;border-radius:10px;padding:10px}
+.pwd,.user{border:1px solid #aaaaaa}
+.btn{background-color:#FF8364;color:#FFE8D5}
+</style>
+
+<script>
+import prompt from '@system.prompt'
+import storage from '@system.storage'
+import fetch from '@system.fetch'
+import router from '@system.router'
+import webview from '@system.webview'
+export default {
+    data(){
+        return{
+            rname:'',
+            cardid:'',
+            isRefreshing:false,
+            username:''
+        }
+    },
+    onInit() {
+        
+    },
+    onInputRname(input) {
+        this.rname = input.value
+    },
+    onInputCardid(input) {
+        this.cardid = input.value
+    },
+    sub(){
+        this.isRefreshing = true
+        if(this.rname == ''){
+            prompt.showToast({message: '请输入您的真实姓名'})
+            return false
+        }
+        if(this.rname == ''){
+            prompt.showToast({message: '请输入您的真实姓名'})
+            return false
+        }
+        let that = this
+        storage.get({
+            key: 'username',
+            success: function (data) {
+                if(data == ''){
+                    router.push({
+                        uri: '/Login',
+                    })
+                }else{
+                    that.username = data
+                }
+            },
+            fail: function (data, code) {
+                router.push({
+                    uri: '/Login',
+                })
+            }
+        })
+        fetch && fetch.fetch({
+            url: "http://member.8090.com/quickapp_addfcm.php",
+            method:'POST',
+            data:{act:'yes',rname:that.rname,idcard:that.cardid,username:that.username},
+            success:function(data) {
+                var sub_obj = ''
+                let sub_res = data.data
+                try{
+                    sub_obj = JSON.parse(sub_res)
+                }catch(error){
+                    prompt.showToast({message: '完善信息失败'})
+                    that.isRefreshing = false
+                    return false
+                }
+                if(sub_obj.code == 1){
+                    router.push({
+                        uri: '/Center',
+                    })
+                    that.isRefreshing = false
+                    return false
+                }else{
+                    prompt.showToast({message:sub_obj.msg})
+                    that.isRefreshing = false
+                    return false
+                }
+            },
+            fail: function (data, code) {
+                that.isRefreshing = false
+                prompt.showToast({message: '完善信息失败'})
+                return false
+            }
+        })
+    },
+    refresh(){
+        this.isRefreshing = true
+        this.isRefreshing = false
+    }
+}
+</script>
